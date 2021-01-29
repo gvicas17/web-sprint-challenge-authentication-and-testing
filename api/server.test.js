@@ -5,7 +5,6 @@ const User = require('./auth/auth-model')
 const db = require('../data/dbConfig')
 const server = require('./server')
 const request = require('supertest')
-const router = require('./auth/auth-router')
 
 const gabby = {username: 'gabbyVicas', password: 'password'}
 const gabbyv = {username: 'gup', password: 'password'}
@@ -26,7 +25,7 @@ test('sanity', () => {
   expect(true).toBe(true)
 })
 
-describe('create new user', () => {
+describe('POST new user', () => {
   it('creates new user', async () => {
     let res
     res = await request(server).post('/api/auth/register').send(gabby)
@@ -35,5 +34,29 @@ describe('create new user', () => {
   it('sends 201 for successfully creating new user', async () => {
     const res = await request(server).post('/api/auth/register').send(gabbyv)
     expect(res.status).toBe(201)
+  })
+})
+
+describe('POST login existing user', () => {
+  it('logs in existing user succesfully', async () => {
+    await request(server).post('/api/auth/register').send(gabby)
+     const res = await request(server).post('/api/auth/login').send(gabby)
+     expect(res.status).toBe(200)
+  })
+  it('sends appropriate error when invalid credientals are used', async () => {
+      await request(server).post('/api/auth/register').send(gabby)
+      const res = await request(server).post('/api/auth/login').send({username: 'gabby', password: 'password'})
+      expect(res.status).toBe(401)
+  })
+})
+
+describe('GET jokes', () => {
+  it('returns correct server response when not logged in', async () => {
+   const res = await request(server).get('/api/jokes/')
+    expect(res.status).toBe(401)
+  })
+  it('returns jokes when logged in', async () => {
+    const res = await request(server).get('/api/jokes/')
+    expect(res.text).toBe("\"token required\"")
   })
 })
