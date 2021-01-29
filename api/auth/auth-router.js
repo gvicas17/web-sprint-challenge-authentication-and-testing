@@ -1,8 +1,24 @@
 const router = require('express').Router();
+const Auth = require('./auth-model')
+const bcrypt = require('bcrypt')
+const {checkingNewUser, generateToken} = require('../middleware/checkingUserInfo')
 
-router.post('/register', (req, res) => {
-  
-  res.end('implement register, please!');
+
+router.post('/register', checkingNewUser, (req, res) => {
+  const {username, password} = req.body
+  const hash = bcrypt.hashSync(password, 10)
+
+  Auth.add({username, password: hash})
+  .then(user => {
+    if(user){
+    res.status(201).json(user)
+    }else{
+      res.end('implement register, please!')
+    }
+    })
+  .catch(() => {
+    res.status(500).json({message: 'username taken'})
+  })
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -29,8 +45,22 @@ router.post('/register', (req, res) => {
   */
 });
 
-router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+router.post('/login', checkingNewUser, async (req, res) => {
+
+  const {username, password} = req.body
+  
+  try{
+    const userInfo = await Auth.findBy({username}).first()
+    if(userInfo && bcrypt.compareSync(password, userInfo.password)){
+      const token = generateToken(userInfo)
+      res.status(200).json({message: 'welcome back!', token})
+    }else{
+      res.status(401).json('invalid credientals')
+    }
+  }catch(err){
+    res.status(500).json(err.messsage)
+  }
+  
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
